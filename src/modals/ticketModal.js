@@ -1,13 +1,43 @@
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType } = require('discord.js');
-const config = require('../../config.json');
+const { EmbedBuilder } = require('discord.js');
+const fs = require('fs');
+const path = require('path');
+
+const configPath = path.join(__dirname, '../../ticketConfig.json');
+
+function loadConfig() {
+  if (fs.existsSync(configPath)) {
+    return JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+  }
+  return {
+    categories: [
+      { name: 'support', label: 'Support', emoji: '🆘' },
+      { name: 'report', label: 'Signalement', emoji: '📋' },
+      { name: 'appeal', label: 'Appel', emoji: '⚖️' },
+      { name: 'partnership', label: 'Partenariat', emoji: '🤝' }
+    ],
+    colors: {
+      primary: '#5865F2',
+      success: '#57F287',
+      error: '#ED4245',
+      warning: '#FEE75C',
+      info: '#00B0F4'
+    },
+    messages: {
+      welcome: 'Bienvenue dans ce ticket de support!',
+      maxTickets: 3,
+      ticketPrefix: 'ticket'
+    }
+  };
+}
 
 module.exports = {
   customId: /^ticket_modal_.+$/,
   async execute(interaction) {
     const category = interaction.customId.split('_')[2];
-    const categoryData = config.categories.find(c => c.name === category);
+    const categoryData = loadConfig().categories.find(c => c.name === category);
     const subject = interaction.fields.getTextInputValue('ticket_subject');
     const description = interaction.fields.getTextInputValue('ticket_description');
+    const config = loadConfig();
 
     if (!categoryData) {
       return await interaction.reply({
@@ -17,6 +47,7 @@ module.exports = {
     }
 
     try {
+      const { ChannelType, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
       const ticketNumber = Math.floor(Math.random() * 10000);
       const channelName = `ticket-${category}-${ticketNumber}`;
 
@@ -24,7 +55,7 @@ module.exports = {
       const ticketChannel = await interaction.guild.channels.create({
         name: channelName,
         type: ChannelType.GuildText,
-        topic: `Ticket #${ticketNumber} | ${categoryData.label} | Créé par ${interaction.user.username}`,
+        topic: `Ticket #${ticketNumber} | ${categoryData.label} | Créé par ${interaction.user.username} | Creator: ${interaction.user.id}`,
         permissionOverwrites: [
           {
             id: interaction.guild.roles.everyone,
@@ -78,7 +109,6 @@ module.exports = {
         components: [closeButton],
       });
 
-      // Réponse à l'utilisateur
       await interaction.reply({
         content: `✅ Ticket créé avec succès! ${ticketChannel}`,
         ephemeral: true,

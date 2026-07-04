@@ -1,4 +1,4 @@
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, ModalBuilder, ActionRowBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 
@@ -30,6 +30,10 @@ function loadConfig() {
   };
 }
 
+function saveConfig(config) {
+  fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+}
+
 module.exports = {
   customId: 'main_config_select',
   async execute(interaction) {
@@ -37,60 +41,32 @@ module.exports = {
     const config = loadConfig();
 
     try {
-      if (choice === 'manage_categories') {
-        const embed = new EmbedBuilder()
-          .setColor(config.colors.primary)
-          .setTitle('📝 Gestion des Catégories')
-          .setDescription('Catégories actuelles:')
-          .addFields(
-            ...config.categories.map(cat => ({
-              name: `${cat.emoji} ${cat.label}`,
-              value: `ID: ${cat.name}`,
-              inline: true
-            }))
-          );
+      if (choice === 'color_primary' || choice === 'color_success' || choice === 'color_error' || choice === 'color_warning' || choice === 'color_info') {
+        const colorMap = {
+          'color_primary': 'primary',
+          'color_success': 'success',
+          'color_error': 'error',
+          'color_warning': 'warning',
+          'color_info': 'info'
+        };
+        const colorKey = colorMap[choice];
 
-        return await interaction.reply({ embeds: [embed], ephemeral: true });
-      }
+        const modal = new ModalBuilder()
+          .setCustomId(`color_modal_${colorKey}`)
+          .setTitle(`Modifier la couleur ${colorKey}`);
 
-      if (choice === 'customize_colors') {
-        const embed = new EmbedBuilder()
-          .setColor(config.colors.primary)
-          .setTitle('🎨 Couleurs Actuelles')
-          .addFields(
-            { name: 'Primaire', value: config.colors.primary, inline: true },
-            { name: 'Succès', value: config.colors.success, inline: true },
-            { name: 'Erreur', value: config.colors.error, inline: true },
-            { name: 'Avertissement', value: config.colors.warning, inline: true },
-            { name: 'Info', value: config.colors.info, inline: true }
-          );
+        const colorInput = new TextInputBuilder()
+          .setCustomId('hex_color')
+          .setLabel('Code hexadécimal (ex: #FF0000)')
+          .setStyle(TextInputStyle.Short)
+          .setRequired(true)
+          .setPlaceholder('#5865F2')
+          .setMaxLength(7);
 
-        return await interaction.reply({ embeds: [embed], ephemeral: true });
-      }
+        const row = new ActionRowBuilder().addComponents(colorInput);
+        modal.addComponents(row);
 
-      if (choice === 'customize_messages') {
-        const embed = new EmbedBuilder()
-          .setColor(config.colors.primary)
-          .setTitle('💬 Messages Personnalisés')
-          .addFields(
-            { name: 'Message de bienvenue', value: config.messages.welcome, inline: false },
-            { name: 'Max de tickets par user', value: config.messages.maxTickets.toString(), inline: true },
-            { name: 'Préfixe des tickets', value: config.messages.ticketPrefix, inline: true }
-          );
-
-        return await interaction.reply({ embeds: [embed], ephemeral: true });
-      }
-
-      if (choice === 'limits_prefs') {
-        const embed = new EmbedBuilder()
-          .setColor(config.colors.primary)
-          .setTitle('⚙️ Limites & Préférences')
-          .addFields(
-            { name: 'Nombre maximum de tickets par utilisateur', value: config.messages.maxTickets.toString(), inline: false },
-            { name: 'Préfixe des canaux de tickets', value: config.messages.ticketPrefix, inline: false }
-          );
-
-        return await interaction.reply({ embeds: [embed], ephemeral: true });
+        return await interaction.showModal(modal);
       }
 
       if (choice === 'preview_config') {
@@ -101,7 +77,11 @@ module.exports = {
             { name: '📝 Catégories', value: `${config.categories.length} catégories`, inline: true },
             { name: '🎨 Couleurs', value: '5 couleurs personnalisées', inline: true },
             { name: '💬 Messages', value: 'Messages configurés', inline: true },
-            { name: '📊 Statistiques', value: `Max tickets: ${config.messages.maxTickets}`, inline: true }
+            { name: 'Primaire', value: config.colors.primary, inline: true },
+            { name: 'Succès', value: config.colors.success, inline: true },
+            { name: 'Erreur', value: config.colors.error, inline: true },
+            { name: 'Avertissement', value: config.colors.warning, inline: true },
+            { name: 'Info', value: config.colors.info, inline: true }
           )
           .setDescription('Configuration complète du système de tickets');
 

@@ -1,4 +1,4 @@
-const { EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder } = require('discord.js');
+const { EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 
@@ -55,7 +55,8 @@ module.exports = {
             { name: '!ping', value: 'Latence du bot', inline: false },
             { name: '!about', value: 'Info du bot', inline: false },
             { name: '!ticket setup', value: 'Envoie le panel de tickets', inline: false },
-            { name: '!ticket config', value: 'Ouvre le menu de configuration complet', inline: false },
+            { name: '!ticket panel', value: 'Crée un panneau personnalisé dans un salon', inline: false },
+            { name: '!ticket config', value: 'Ouvre le menu de configuration (Admin)', inline: false },
             { name: '!ticket close', value: 'Ferme le ticket actuel', inline: false },
             { name: '!ticket add @user', value: 'Ajoute un utilisateur', inline: false },
             { name: '!ticket remove @user', value: 'Retire un utilisateur', inline: false },
@@ -80,7 +81,7 @@ module.exports = {
           .setColor('#00B0F4')
           .setTitle('ℹ️ Ticket Bot')
           .addFields(
-            { name: 'Version', value: '2.0.0 Pro', inline: true },
+            { name: 'Version', value: '3.0.0 Pro', inline: true },
             { name: 'Dev', value: 'Narutsuu', inline: true },
             { name: 'Serveurs', value: client.guilds.cache.size.toString(), inline: true }
           );
@@ -117,7 +118,36 @@ module.exports = {
           return message.reply({ embeds: [embed], components: [row] });
         }
 
+        if (subcommand === 'panel') {
+          const modal = new ModalBuilder()
+            .setCustomId('create_panel_modal')
+            .setTitle('Créer un panneau de tickets');
+
+          const messageInput = new TextInputBuilder()
+            .setCustomId('panel_message')
+            .setLabel('Message du panneau')
+            .setStyle(TextInputStyle.Paragraph)
+            .setRequired(true)
+            .setMaxLength(500);
+
+          const channelInput = new TextInputBuilder()
+            .setCustomId('panel_channel')
+            .setLabel('ID du salon (ou laissez vide pour ici)')
+            .setStyle(TextInputStyle.Short)
+            .setRequired(false);
+
+          const firstRow = new ActionRowBuilder().addComponents(messageInput);
+          const secondRow = new ActionRowBuilder().addComponents(channelInput);
+
+          modal.addComponents(firstRow, secondRow);
+          return await message.showModal(modal);
+        }
+
         if (subcommand === 'config') {
+          if (!message.member.permissions.has('Administrator')) {
+            return message.reply('❌ Permission refusée! (Administrateur seulement)');
+          }
+
           const embed = new EmbedBuilder()
             .setColor(config.colors.primary)
             .setTitle('⚙️ Configuration Complète')
@@ -133,10 +163,11 @@ module.exports = {
             .setCustomId('main_config_select')
             .setPlaceholder('Que voulez-vous configurer?')
             .addOptions([
-              { label: 'Gestion Catégories', value: 'manage_categories', emoji: '📝', description: 'Ajouter/Modifier/Supprimer des catégories' },
-              { label: 'Personnaliser Couleurs', value: 'customize_colors', emoji: '🎨', description: 'Modifier les couleurs des embeds' },
-              { label: 'Messages Personnalisés', value: 'customize_messages', emoji: '💬', description: 'Modifier les messages du bot' },
-              { label: 'Limites & Préférences', value: 'limits_prefs', emoji: '⚙️', description: 'Configurer les limites et préférences' },
+              { label: 'Couleur Primaire', value: 'color_primary', emoji: '🎨', description: 'Modifier la couleur primaire' },
+              { label: 'Couleur Succès', value: 'color_success', emoji: '✅', description: 'Modifier la couleur de succès' },
+              { label: 'Couleur Erreur', value: 'color_error', emoji: '❌', description: 'Modifier la couleur d\'erreur' },
+              { label: 'Couleur Avertissement', value: 'color_warning', emoji: '⚠️', description: 'Modifier la couleur d\'avertissement' },
+              { label: 'Couleur Info', value: 'color_info', emoji: 'ℹ️', description: 'Modifier la couleur d\'info' },
               { label: 'Aperçu Configuration', value: 'preview_config', emoji: '👁️', description: 'Voir la config actuelle' }
             ]);
 
