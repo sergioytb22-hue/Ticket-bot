@@ -1,4 +1,4 @@
-const { EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
+const { EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 
@@ -92,10 +92,6 @@ module.exports = {
         const config = loadConfig();
 
         if (subcommand === 'setup') {
-          if (!message.member.permissions.has('ManageMessages')) {
-            return message.reply('❌ Permission refusée!');
-          }
-
           const embed = new EmbedBuilder()
             .setColor(config.colors.primary)
             .setTitle('🎫 Système de Tickets')
@@ -122,10 +118,6 @@ module.exports = {
         }
 
         if (subcommand === 'config') {
-          if (!message.member.permissions.has('Administrator')) {
-            return message.reply('❌ Permission refusée! (Admin seulement)');
-          }
-
           const embed = new EmbedBuilder()
             .setColor(config.colors.primary)
             .setTitle('⚙️ Configuration Complète')
