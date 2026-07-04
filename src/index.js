@@ -15,6 +15,7 @@ const client = new Client({
 
 client.commands = new Collection();
 client.buttons = new Collection();
+client.selects = new Collection();
 client.modals = new Collection();
 client.events = new Collection();
 
@@ -50,6 +51,24 @@ if (fs.existsSync(buttonsPath)) {
       }
     } catch (error) {
       console.error(`❌ Error loading button ${file}:`, error);
+    }
+  }
+}
+
+// Load select menu handlers
+const selectsPath = path.join(__dirname, 'selects');
+if (fs.existsSync(selectsPath)) {
+  const selectFiles = fs.readdirSync(selectsPath).filter(file => file.endsWith('.js'));
+  for (const file of selectFiles) {
+    try {
+      const filePath = path.join(selectsPath, file);
+      const select = require(filePath);
+      if (select.customId) {
+        client.selects.set(select.customId, select);
+        console.log(`✅ Loaded select menu: ${select.customId}`);
+      }
+    } catch (error) {
+      console.error(`❌ Error loading select menu ${file}:`, error);
     }
   }
 }
