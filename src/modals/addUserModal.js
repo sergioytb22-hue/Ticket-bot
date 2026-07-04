@@ -2,7 +2,7 @@ const { EmbedBuilder } = require('discord.js');
 const config = require('../../config.json');
 
 module.exports = {
-  customId: 'remove_user_modal',
+  customId: 'add_user_modal',
   async execute(interaction) {
     const userId = interaction.fields.getTextInputValue('user_id_input');
 
@@ -10,20 +10,20 @@ module.exports = {
       const user = await interaction.client.users.fetch(userId);
 
       await interaction.channel.permissionOverwrites.edit(user, {
-        ViewChannel: false,
-        SendMessages: false,
-        ReadMessageHistory: false,
+        ViewChannel: true,
+        SendMessages: true,
+        ReadMessageHistory: true,
       });
 
       const embed = new EmbedBuilder()
-        .setColor(config.colors.warning)
-        .setTitle('➖ Utilisateur Retiré')
-        .setDescription(`${user.username}#${user.discriminator} a été retiré du ticket`)
+        .setColor(config.colors.success)
+        .setTitle('➕ Utilisateur Ajouté')
+        .setDescription(`${user.username}#${user.discriminator} a été ajouté au ticket`)
         .setTimestamp();
 
       await interaction.reply({ embeds: [embed] });
     } catch (error) {
-      console.error('Erreur lors du retrait d\'utilisateur:', error);
+      console.error('Erreur lors de l\'ajout d\'utilisateur:', error);
       await interaction.reply({
         content: '❌ Erreur! Vérifiez que l\'ID utilisateur est correct.',
         ephemeral: true,

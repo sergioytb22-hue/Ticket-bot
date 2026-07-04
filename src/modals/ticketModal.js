@@ -1,10 +1,4 @@
-const {
-  EmbedBuilder,
-  ActionRowBuilder,
-  ButtonBuilder,
-  ButtonStyle,
-  ChannelType,
-} = require('discord.js');
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType } = require('discord.js');
 const config = require('../../config.json');
 
 module.exports = {
@@ -15,17 +9,22 @@ module.exports = {
     const subject = interaction.fields.getTextInputValue('ticket_subject');
     const description = interaction.fields.getTextInputValue('ticket_description');
 
-    await interaction.deferReply({ ephemeral: true });
+    if (!categoryData) {
+      return await interaction.reply({
+        content: '❌ Catégorie non trouvée!',
+        ephemeral: true,
+      });
+    }
 
     try {
-      const ticketNumber = Math.floor(Math.random() * 100000);
-      const channelName = `${category}-${ticketNumber}`;
+      const ticketNumber = Math.floor(Math.random() * 10000);
+      const channelName = `ticket-${category}-${ticketNumber}`;
 
-      // Créer le canal
+      // Créer le canal du ticket
       const ticketChannel = await interaction.guild.channels.create({
         name: channelName,
         type: ChannelType.GuildText,
-        topic: `Ticket #${ticketNumber} | ${subject}`,
+        topic: `Ticket #${ticketNumber} | ${categoryData.label} | Créé par ${interaction.user.username}`,
         permissionOverwrites: [
           {
             id: interaction.guild.roles.everyone,
@@ -33,62 +32,63 @@ module.exports = {
           },
           {
             id: interaction.user.id,
-            allow: ['ViewChannel', 'SendMessages', 'ReadMessageHistory', 'AttachFiles'],
+            allow: ['ViewChannel', 'SendMessages', 'ReadMessageHistory'],
           },
         ],
       });
 
-      // Embed du ticket
-      const ticketEmbed = new EmbedBuilder()
+      // Message d'accueil du ticket
+      const embed = new EmbedBuilder()
         .setColor(config.colors.success)
-        .setTitle(`${categoryData.emoji} ${categoryData.label} - #${ticketNumber}`)
-        .setDescription('Merci d\'avoir créé un ticket ! Un modérateur répondra bientôt.')
+        .setTitle(`${categoryData.emoji} Nouveau Ticket - ${subject}`)
+        .setDescription(description)
         .addFields(
-          { name: '👤 Créé par', value: `${interaction.user}`, inline: true },
           { name: '📌 Catégorie', value: categoryData.label, inline: true },
-          { name: '📝 Sujet', value: subject, inline: false },
-          { name: '📄 Description', value: description, inline: false },
+          { name: '🔢 Numéro', value: `#${ticketNumber}`, inline: true },
+          { name: '👤 Auteur', value: interaction.user.username, inline: true },
           {
-            name: '⏰ Date',
+            name: '⏰ Créé le',
             value: `<t:${Math.floor(Date.now() / 1000)}:f>`,
-            inline: true,
+            inline: false,
           }
         )
-        .setFooter({ text: `Ticket ID: ${ticketChannel.id}` });
+        .setFooter({ text: `ID du canal: ${ticketChannel.id}` });
 
-      // Boutons d'action
-      const actionButtons = new ActionRowBuilder()
+      const closeButton = new ActionRowBuilder()
         .addComponents(
           new ButtonBuilder()
             .setCustomId('close_ticket')
-            .setLabel('Fermer')
+            .setLabel('Fermer le ticket')
             .setEmoji('🔒')
             .setStyle(ButtonStyle.Danger),
           new ButtonBuilder()
-            .setCustomId('add_user')
-            .setLabel('Ajouter quelqu\'un')
+            .setCustomId('add_user_ticket')
+            .setLabel('Ajouter un utilisateur')
             .setEmoji('➕')
-            .setStyle(ButtonStyle.Primary)
+            .setStyle(ButtonStyle.Primary),
+          new ButtonBuilder()
+            .setCustomId('remove_user_ticket')
+            .setLabel('Retirer un utilisateur')
+            .setEmoji('➖')
+            .setStyle(ButtonStyle.Secondary)
         );
 
       await ticketChannel.send({
-        embeds: [ticketEmbed],
-        components: [actionButtons],
+        embeds: [embed],
+        components: [closeButton],
       });
 
-      // Répondre à l'utilisateur
-      await interaction.editReply({
-        content: `✅ Ticket créé avec succès ! ${ticketChannel}`,
+      // Réponse à l'utilisateur
+      await interaction.reply({
+        content: `✅ Ticket créé avec succès! ${ticketChannel}`,
+        ephemeral: true,
       });
-
-      // Log
-      console.log(`🎫 Ticket créé: #${ticketNumber} (${category}) par ${interaction.user.tag}`);
-
     } catch (error) {
       console.error('Erreur lors de la création du ticket:', error);
-      await interaction.editReply({
-        content: '❌ Une erreur s\'est produite lors de la création du ticket !',
-      });
+      await interaction.reply({
+        content: '❌ Erreur lors de la création du ticket!',
+        ephemeral: true,
+      }).catch(() => {});
     }
   },
 };
