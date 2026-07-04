@@ -1,10 +1,10 @@
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType } = require('discord.js');
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
 const config = require('../../config.json');
 
 module.exports = {
   customId: 'ticket_category_select',
   async execute(interaction) {
-    const category = interaction.values[0]; // La sélection du menu déroulant
+    const category = interaction.values[0];
     const categoryData = config.categories.find(c => c.name === category);
 
     if (!categoryData) {
@@ -15,73 +15,37 @@ module.exports = {
     }
 
     try {
-      const ticketNumber = Math.floor(Math.random() * 10000);
-      const channelName = `ticket-${category}-${ticketNumber}`;
+      // Afficher un modal pour demander le sujet du ticket
+      const modal = new ModalBuilder()
+        .setCustomId(`ticket_modal_${category}`)
+        .setTitle(`Créer un ticket - ${categoryData.label}`);
 
-      // Créer le canal du ticket
-      const ticketChannel = await interaction.guild.channels.create({
-        name: channelName,
-        type: ChannelType.GuildText,
-        topic: `Ticket #${ticketNumber} | ${categoryData.label} | Créé par ${interaction.user.username}`,
-        permissionOverwrites: [
-          {
-            id: interaction.guild.roles.everyone,
-            deny: ['ViewChannel'],
-          },
-          {
-            id: interaction.user.id,
-            allow: ['ViewChannel', 'SendMessages', 'ReadMessageHistory'],
-          },
-        ],
-      });
+      const subjectInput = new TextInputBuilder()
+        .setCustomId('ticket_subject')
+        .setLabel('Sujet du ticket')
+        .setStyle(TextInputStyle.Short)
+        .setRequired(true)
+        .setMaxLength(100);
 
-      // Message d'accueil du ticket
-      const embed = new EmbedBuilder()
-        .setColor(config.colors.success)
-        .setTitle(`${categoryData.emoji} Nouveau Ticket`)
-        .setDescription(`Ticket créé par ${interaction.user}`)
-        .addFields(
-          { name: '📌 Catégorie', value: categoryData.label, inline: true },
-          { name: '🔢 Numéro', value: `#${ticketNumber}`, inline: true },
-          { name: '👤 Auteur', value: interaction.user.username, inline: true },
-          {
-            name: '⏰ Créé le',
-            value: `<t:${Math.floor(Date.now() / 1000)}:f>`,
-            inline: false,
-          }
-        )
-        .setFooter({ text: `ID du canal: ${ticketChannel.id}` });
+      const descriptionInput = new TextInputBuilder()
+        .setCustomId('ticket_description')
+        .setLabel('Description du problème')
+        .setStyle(TextInputStyle.Paragraph)
+        .setRequired(true)
+        .setMaxLength(1000);
 
-      const closeButton = new ActionRowBuilder()
-        .addComponents(
-          new ButtonBuilder()
-            .setCustomId('close_ticket')
-            .setLabel('Fermer le ticket')
-            .setEmoji('🔒')
-            .setStyle(ButtonStyle.Danger),
-          new ButtonBuilder()
-            .setCustomId('add_user_ticket')
-            .setLabel('Ajouter un utilisateur')
-            .setEmoji('➕')
-            .setStyle(ButtonStyle.Primary)
-        );
+      const firstRow = new ActionRowBuilder().addComponents(subjectInput);
+      const secondRow = new ActionRowBuilder().addComponents(descriptionInput);
 
-      await ticketChannel.send({
-        embeds: [embed],
-        components: [closeButton],
-      });
+      modal.addComponents(firstRow, secondRow);
 
-      // Réponse à l'utilisateur
-      await interaction.reply({
-        content: `✅ Ticket créé avec succès! ${ticketChannel}`,
-        ephemeral: true,
-      });
+      await interaction.showModal(modal);
     } catch (error) {
-      console.error('Erreur lors de la création du ticket:', error);
+      console.error('Erreur lors du traitement du menu déroulant:', error);
       await interaction.reply({
-        content: '❌ Erreur lors de la création du ticket!',
+        content: '❌ Erreur lors du traitement de votre sélection!',
         ephemeral: true,
-      });
+      }).catch(() => {});
     }
   },
 };
