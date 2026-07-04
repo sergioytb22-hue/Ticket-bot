@@ -26,6 +26,31 @@ module.exports = {
         }
       }
 
+      // Handle select menus
+      if (interaction.isStringSelectMenu()) {
+        const select = client.selects.get(interaction.customId);
+        
+        if (!select) {
+          console.error(`Select menu not found: ${interaction.customId}`);
+          return await interaction.reply({
+            content: '❌ Ce menu déroulant n\'existe pas!',
+            ephemeral: true,
+          }).catch(() => {});
+        }
+
+        try {
+          await select.execute(interaction, client);
+        } catch (error) {
+          console.error('Select menu execution error:', error);
+          const errorMsg = { content: '❌ Erreur lors du traitement du menu!', ephemeral: true };
+          if (interaction.replied || interaction.deferred) {
+            await interaction.followUp(errorMsg).catch(() => {});
+          } else {
+            await interaction.reply(errorMsg).catch(() => {});
+          }
+        }
+      }
+
       // Handle buttons
       if (interaction.isButton()) {
         let button = client.buttons.get(interaction.customId);
