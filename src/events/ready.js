@@ -1,13 +1,14 @@
+const { EmbedBuilder } = require('discord.js');
+
 module.exports = {
   name: 'ready',
   once: true,
-  execute(client) {
-    console.log(`\n✅ Bot connecté: ${client.user.tag}`);
-    console.log(`🎫 Ticket Bot v1.0.0 prêt!\n`);
-    try {
-      client.user.setActivity('/ticket help • Gestion de tickets', { type: 'WATCHING' });
-    } catch (error) {
-      console.error('Activity error:', error);
-    }
+  async execute(client) {
+    console.log(`✅ Bot connecté en tant que ${client.user.tag}`);
+    console.log(`📊 Serveurs: ${client.guilds.cache.size}`);
+    console.log(`👥 Utilisateurs: ${client.users.cache.size}`);
+    
+    // Définir le statut du bot
+    client.user.setActivity('!ticket help | Tickets', { type: 'WATCHING' });
   },
 };
