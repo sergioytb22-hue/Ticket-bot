@@ -28,7 +28,18 @@ module.exports = {
 
       // Handle buttons
       if (interaction.isButton()) {
-        const button = client.buttons.get(interaction.customId);
+        let button = client.buttons.get(interaction.customId);
+        
+        // Si pas trouvé, chercher avec regex
+        if (!button) {
+          for (const [key, value] of client.buttons) {
+            if (key instanceof RegExp && key.test(interaction.customId)) {
+              button = value;
+              break;
+            }
+          }
+        }
+
         if (!button) {
           console.error(`Button not found: ${interaction.customId}`);
           return;
@@ -49,7 +60,18 @@ module.exports = {
 
       // Handle modals
       if (interaction.isModalSubmit()) {
-        const modal = client.modals.get(interaction.customId);
+        let modal = client.modals.get(interaction.customId);
+        
+        // Si pas trouvé, chercher avec regex
+        if (!modal) {
+          for (const [key, value] of client.modals) {
+            if (key instanceof RegExp && key.test(interaction.customId)) {
+              modal = value;
+              break;
+            }
+          }
+        }
+
         if (!modal) {
           console.error(`Modal not found: ${interaction.customId}`);
           return;
